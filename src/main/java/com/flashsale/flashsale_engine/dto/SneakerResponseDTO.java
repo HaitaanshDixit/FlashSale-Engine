@@ -15,10 +15,17 @@ public class SneakerResponseDTO {
     private String name;
     private String brand;
     private BigDecimal price;
-    private Integer totalStock;
-    private Integer flashSaleStock;
     private String imageUrl;
+
+    //creates urgency ("Only 5 left!")
+    private Integer flashSaleStock;
+
+    // Frontend uses these to render countdown timers
     private LocalDateTime saleStartTime;
     private LocalDateTime saleEndTime;
-    private LocalDateTime createdAt;
+
+    // Tells frontend exactly what state the sale is in
+    private String saleStatus; // UPCOMING / ACTIVE / SOLD_OUT / ENDED
+
+    private Boolean isSoldOut;
 }
