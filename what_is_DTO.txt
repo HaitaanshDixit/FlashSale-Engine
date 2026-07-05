@@ -1,0 +1,25 @@
+DTO = Data Transfer Object.
+It's a simple class that controls what data goes in and out of our API.
+
+Right now our Sneaker entity has fields like createdAt, flashSaleStock, totalStock
+These are internal DB fields. We don't want to expose all of them raw to whoever is calling our API.
+
+For example:
+When someone creates a sneaker (admin), they shouldn't manually set createdAt or id, those are auto-generated
+When someone views a sneaker (user), we control exactly what they see
+
+So we have two DTOs : one for incoming data (request), one for outgoing data (response).
+
+---------------------------------------------------------------------------------------------------------
+
+in our flash sale system there are two types of callers:
+
+Admin (seller/business side):
+Creates new sneakers → sends SneakerRequestDTO
+Updates stock, sets sale time
+Views all sneakers with full details
+
+Customer (buyer side):
+Views sneakers → receives SneakerResponseDTO
+Clicks "Buy Now" during flash sale
+Views their orders
