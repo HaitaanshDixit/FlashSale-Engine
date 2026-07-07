@@ -2,6 +2,7 @@ package com.flashsale.flashsale_engine.service;
 
 import com.flashsale.flashsale_engine.dto.SneakerRequestDTO;
 import com.flashsale.flashsale_engine.dto.SneakerResponseDTO;
+import com.flashsale.flashsale_engine.exception.ResourceNotFoundException;
 import com.flashsale.flashsale_engine.model.Sneaker;
 import com.flashsale.flashsale_engine.repository.SneakerRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.flashsale.flashsale_engine.exception.ResourceNotFoundException;
+
 
 @Service
 @RequiredArgsConstructor
@@ -35,15 +39,13 @@ public class SneakerService {
 
     // get by id
     public SneakerResponseDTO getSneakerById(Long id) {
-        Sneaker sneaker = sneakerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Sneaker not found with id: " + id));
+        Sneaker sneaker = sneakerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + id));
         return mapToResponseDTO(sneaker);
     }
 
     // updating any sneaker args
     public SneakerResponseDTO updateSneaker(Long id, SneakerRequestDTO requestDTO) {
-        Sneaker sneaker = sneakerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Sneaker not found with id: " + id));
+        Sneaker sneaker = sneakerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + id));
 
         sneaker.setName(requestDTO.getName());
         sneaker.setBrand(requestDTO.getBrand());
@@ -61,7 +63,7 @@ public class SneakerService {
     // deleting data of our product by id
     public void deleteSneaker(Long id) {
         if (!sneakerRepository.existsById(id)) {
-            throw new RuntimeException("Sneaker not found with id: " + id);
+            throw new ResourceNotFoundException("Sneaker not found with id: " + id);
         }
         sneakerRepository.deleteById(id);
     }
