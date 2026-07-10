@@ -1,7 +1,8 @@
 package com.flashsale.flashsale_engine.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.*;  // read down below
+//  before the data even touches the Service or Database, Spring intercepts it and checks all the @NotBlank, @NotNull, @Min, @DecimalMin annotations
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor // Lombok generates empty constructor new Sneaker() for empty obj
 @AllArgsConstructor //  Lombok generates a constructor with all fields as parameters.
-@Builder // Sneaker.builder().name("Air Jordan").price(...).build() ------- very clean,
+@Builder // Sneaker.builder().name("Air Jordan").price(...).build() ------- very clean, (lombok ka hai)
 public class Sneaker {
 
     @Id  // MARKS ID AS PRIMARY KEY OF THE TABLE
