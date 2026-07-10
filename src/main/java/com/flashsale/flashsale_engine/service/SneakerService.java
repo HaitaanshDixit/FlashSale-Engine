@@ -98,7 +98,7 @@ public class SneakerService {
                 .build();
     }
 
-    // ─── HELPER : Compute sale status
+    // HELPER : Compute sale status
     private String computeSaleStatus(Sneaker sneaker) {
         LocalDateTime now = LocalDateTime.now();
 
