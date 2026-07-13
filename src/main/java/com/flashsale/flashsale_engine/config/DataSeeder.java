@@ -9,11 +9,11 @@ import org.springframework.context.annotation.Configuration;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Configuration
+@Configuration  // runs at startup as it contains configuration code
 public class DataSeeder {
 
     @Bean
-    public CommandLineRunner seedData(SneakerRepository sneakerRepository) {
+    public CommandLineRunner seedData(SneakerRepository sneakerRepository) { // commandlinerunner runs everything at startup (yaad agaya)
         return args -> {
 
             // Only seed if table is empty (prevents duplicate data on restart)
@@ -21,7 +21,8 @@ public class DataSeeder {
                 return;
             }
 
-            LocalDateTime saleStart = LocalDateTime.now().plusMinutes(2);
+            LocalDateTime saleStart = LocalDateTime.now().minusMinutes(10);
+            // sale starts 2 minutes from when the app boots
             LocalDateTime saleEnd = saleStart.plusHours(2);
 
             sneakerRepository.save(Sneaker.builder()
