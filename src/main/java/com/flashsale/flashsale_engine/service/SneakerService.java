@@ -12,9 +12,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.flashsale.flashsale_engine.exception.ResourceNotFoundException;
-
-
 @Service
 @RequiredArgsConstructor
 //Lombok's annotation. Since sneakerRepository is declared as final, Lombok automatically generates a constructor that injects it.
