@@ -14,16 +14,19 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @RequiredArgsConstructor
 public class OrderService {
 
     private final OrderRepository orderRepository;
     private final SneakerRepository sneakerRepository;
+    @Transactional
     public OrderResponseDTO placeOrder(OrderRequestDTO requestDTO) {
 
         //1: Find the sneaker
-        Sneaker sneaker = sneakerRepository.findById(requestDTO.getSneakerId()).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + requestDTO.getSneakerId()));
+        Sneaker sneaker = sneakerRepository.findByIdWithPessimisticLock(requestDTO.getSneakerId()).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + requestDTO.getSneakerId()));
 
         //2: Check if sale is active
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
