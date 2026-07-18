@@ -21,9 +21,8 @@ public class DataSeeder {
                 return;
             }
 
-            LocalDateTime saleStart = LocalDateTime.now().minusMinutes(10);
-            // sale starts 2 minutes from when the app boots
-            LocalDateTime saleEnd = saleStart.plusHours(2);
+            LocalDateTime saleStart = LocalDateTime.now().minusMinutes(1);
+            LocalDateTime saleEnd = saleStart.plusHours(72);
 
             sneakerRepository.save(Sneaker.builder()
                     .name("Air Jordan 1 Retro High OG")
