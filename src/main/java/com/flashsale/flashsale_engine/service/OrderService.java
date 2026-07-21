@@ -22,13 +22,15 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final SneakerRepository sneakerRepository;
+    private final RedisStockService redisStockService;
+
     @Transactional
     public OrderResponseDTO placeOrder(OrderRequestDTO requestDTO) {
 
-        //1: Find the sneaker
+        // Step 1: Find the sneaker
         Sneaker sneaker = sneakerRepository.findByIdWithPessimisticLock(requestDTO.getSneakerId()).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + requestDTO.getSneakerId()));
 
-        //2: Check if sale is active
+        // Step 2: Check if sale is active
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         if (sneaker.getSaleStartTime() == null || sneaker.getSaleEndTime() == null) {
             throw new RuntimeException("This sneaker has no active flash sale");
@@ -40,23 +42,36 @@ public class OrderService {
             throw new RuntimeException("Flash sale has ended");
         }
 
-        //3: Check if already ordered by this user
+        // Step 3: Check if already ordered
         boolean alreadyOrdered = orderRepository.existsBySneakerIdAndUserId(requestDTO.getSneakerId(), requestDTO.getUserId());
         if (alreadyOrdered) {
             throw new RuntimeException("You have already purchased this sneaker");
         }
 
-        //4: Check stock
-        if (sneaker.getFlashSaleStock() <= 0) {
+        // Step 4: Redis speed gate, check and decrement atomically
+        // Initialize Redis stock if not already set
+        if (!redisStockService.isStockInitialized(requestDTO.getSneakerId())) {
+            redisStockService.initializeStock(requestDTO.getSneakerId(), sneaker.getFlashSaleStock());
+        }
+
+        Long remainingStock = redisStockService.decrementStock(requestDTO.getSneakerId());
+        if (remainingStock < 0) {
+            // Restore Redis counter since we over-decremented
+            redisStockService.incrementStock(requestDTO.getSneakerId());
             throw new RuntimeException("Sneaker is sold out");
         }
 
-        // Step 5: Decrement stock — THIS IS THE NAIVE PART
-        // No locking here — will break under concurrent load
+        // Step 5: Check DB stock (double safety net)
+        if (sneaker.getFlashSaleStock() <= 0) {
+            redisStockService.incrementStock(requestDTO.getSneakerId());
+            throw new RuntimeException("Sneaker is sold out");
+        }
+
+        // Step 6: Decrement DB stock
         sneaker.setFlashSaleStock(sneaker.getFlashSaleStock() - 1);
         sneakerRepository.save(sneaker);
 
-        //6: Create order
+        // Step 7: Create order
         Order order = Order.builder()
                 .sneaker(sneaker)
                 .userId(requestDTO.getUserId())
