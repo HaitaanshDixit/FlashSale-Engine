@@ -13,13 +13,24 @@ import java.time.LocalDateTime;
 public class DataSeeder {
 
     @Bean
-    public CommandLineRunner seedData(SneakerRepository sneakerRepository) { // commandlinerunner runs everything at startup (yaad agaya)
+    public CommandLineRunner seedData(SneakerRepository sneakerRepository, RedisStockService redisStockService) { // commandlinerunner runs everything at startup (yaad agaya)
         return args -> {
 
+            /*
             // Only seed if table is empty (prevents duplicate data on restart)
             if (sneakerRepository.count() > 0) {
                 return;
             }
+            */
+
+            if (sneakerRepository.count() == 0) {
+                // existing 10 sneaker saves stay exactly here, unchanged
+                System.out.println("✅ 10 sneakers seeded successfully!");
+            }
+
+            sneakerRepository.findAll().forEach(sneaker -> redisStockService.initializeStock(sneaker.getId(), sneaker.getFlashSaleStock()));
+            System.out.println("✅ Redis stock initialized for all sneakers!");
+        };
 
             LocalDateTime saleStart = LocalDateTime.now().minusMinutes(1);
             LocalDateTime saleEnd = saleStart.plusHours(72);
