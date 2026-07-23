@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.flashsale.flashsale_engine.service.RedisStockService;
+
 @Configuration  // runs at startup as it contains configuration code
 public class DataSeeder {
 
