@@ -142,6 +142,16 @@ public class DataSeeder {
                 System.out.println("10 sneakers seeded successfully!");
             }
 
+            LocalDateTime freshSaleStart = LocalDateTime.now().minusMinutes(1);
+            LocalDateTime freshSaleEnd = freshSaleStart.plusHours(72);
+
+            sneakerRepository.findAll().forEach(sneaker -> {
+                sneaker.setSaleStartTime(freshSaleStart);
+                sneaker.setSaleEndTime(freshSaleEnd);
+                sneakerRepository.save(sneaker);
+            });
+            System.out.println("Sale window refreshed for all sneakers!");
+
             sneakerRepository.findAll().forEach(sneaker -> redisStockService.initializeStock(sneaker.getId(), sneaker.getFlashSaleStock()));
             System.out.println("Redis stock initialized for all sneakers!");
         };
