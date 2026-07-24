@@ -27,41 +27,43 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO placeOrder(OrderRequestDTO requestDTO) {
 
-        // Step 1: Find the sneaker
-        Sneaker sneaker = sneakerRepository.findByIdWithPessimisticLock(requestDTO.getSneakerId()).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + requestDTO.getSneakerId()));
+        // Step 1: Cheap, non-locking fetch just to check sale window and get flashSaleStock for Redis init
+        Sneaker sneakerCheck = sneakerRepository.findById(requestDTO.getSneakerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + requestDTO.getSneakerId()));
 
-        // Step 2: Check if sale is active
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        if (sneaker.getSaleStartTime() == null || sneaker.getSaleEndTime() == null) {
+        if (sneakerCheck.getSaleStartTime() == null || sneakerCheck.getSaleEndTime() == null) {
             throw new RuntimeException("This sneaker has no active flash sale");
         }
-        if (now.isBefore(sneaker.getSaleStartTime())) {
+        if (now.isBefore(sneakerCheck.getSaleStartTime())) {
             throw new RuntimeException("Flash sale has not started yet");
         }
-        if (now.isAfter(sneaker.getSaleEndTime())) {
+        if (now.isAfter(sneakerCheck.getSaleEndTime())) {
             throw new RuntimeException("Flash sale has ended");
         }
 
-        // Step 3: Check if already ordered
+        // Step 2: Check if already ordered (no lock needed, just a read)
         boolean alreadyOrdered = orderRepository.existsBySneakerIdAndUserId(requestDTO.getSneakerId(), requestDTO.getUserId());
         if (alreadyOrdered) {
             throw new RuntimeException("You have already purchased this sneaker");
         }
 
-        // Step 4: Redis speed gate, check and decrement atomically
-        // Initialize Redis stock if not already set
+        // Step 3: REDIS SPEED GATE — reject here, before ever touching the pessimistic lock
         if (!redisStockService.isStockInitialized(requestDTO.getSneakerId())) {
-            redisStockService.initializeStock(requestDTO.getSneakerId(), sneaker.getFlashSaleStock());
+            redisStockService.initializeStock(requestDTO.getSneakerId(), sneakerCheck.getFlashSaleStock());
         }
 
         Long remainingStock = redisStockService.decrementStock(requestDTO.getSneakerId());
         if (remainingStock < 0) {
-            // Restore Redis counter since we over-decremented
-            redisStockService.incrementStock(requestDTO.getSneakerId());
+            redisStockService.incrementStock(requestDTO.getSneakerId()); // restore over-decrement
             throw new RuntimeException("Sneaker is sold out");
         }
 
-        // Step 5: Check DB stock (double safety net)
+        // Step 4: Only requests that passed the Redis gate reach the pessimistic lock
+        Sneaker sneaker = sneakerRepository.findByIdWithPessimisticLock(requestDTO.getSneakerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + requestDTO.getSneakerId()));
+
+        // Step 5: DB stock double safety net
         if (sneaker.getFlashSaleStock() <= 0) {
             redisStockService.incrementStock(requestDTO.getSneakerId());
             throw new RuntimeException("Sneaker is sold out");
