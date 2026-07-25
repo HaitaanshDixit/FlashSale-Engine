@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
+
 @Service
 @RequiredArgsConstructor
 //Lombok's annotation. Since sneakerRepository is declared as final, Lombok automatically generates a constructor that injects it.
@@ -20,6 +24,7 @@ public class SneakerService {
     private final SneakerRepository sneakerRepository;
 
     // creating
+    @CacheEvict(value = "sneakers", key = "'all'")
     public SneakerResponseDTO createSneaker(SneakerRequestDTO requestDTO) {
         Sneaker sneaker = mapToEntity(requestDTO);
         Sneaker saved = sneakerRepository.save(sneaker);
@@ -27,6 +32,7 @@ public class SneakerService {
     }
 
     // getting all the sneakers
+    @Cacheable(value = "sneakers", key = "'all'")
     public List<SneakerResponseDTO> getAllSneakers() {
         return sneakerRepository.findAll()
                 .stream()
@@ -35,12 +41,17 @@ public class SneakerService {
     }
 
     // get by id
+    @Cacheable(value = "sneakers", key = "#id")
     public SneakerResponseDTO getSneakerById(Long id) {
         Sneaker sneaker = sneakerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + id));
         return mapToResponseDTO(sneaker);
     }
 
     // updating any sneaker args
+    @Caching(evict = {
+            @CacheEvict(value = "sneakers", key = "'all'"),
+            @CacheEvict(value = "sneakers", key = "#id")
+    })
     public SneakerResponseDTO updateSneaker(Long id, SneakerRequestDTO requestDTO) {
         Sneaker sneaker = sneakerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + id));
 
@@ -58,6 +69,10 @@ public class SneakerService {
     }
 
     // deleting data of our product by id
+    @Caching(evict = {
+            @CacheEvict(value = "sneakers", key = "'all'"),
+            @CacheEvict(value = "sneakers", key = "#id")
+    })
     public void deleteSneaker(Long id) {
         if (!sneakerRepository.existsById(id)) {
             throw new ResourceNotFoundException("Sneaker not found with id: " + id);
