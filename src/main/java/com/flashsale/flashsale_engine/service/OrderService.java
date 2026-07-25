@@ -48,7 +48,7 @@ public class OrderService {
             throw new RuntimeException("You have already purchased this sneaker");
         }
 
-        // Step 3: REDIS SPEED GATE — reject here, before ever touching the pessimistic lock
+        // Step 3: REDIS SPEED GATE,  reject here, before ever touching the pessimistic lock
         if (!redisStockService.isStockInitialized(requestDTO.getSneakerId())) {
             redisStockService.initializeStock(requestDTO.getSneakerId(), sneakerCheck.getFlashSaleStock());
         }
