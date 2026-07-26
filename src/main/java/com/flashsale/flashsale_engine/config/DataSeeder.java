@@ -35,7 +35,7 @@ public class DataSeeder {
                         .price(new BigDecimal("14995"))
                         .totalStock(500)
                         .flashSaleStock(50)
-                        .imageUrl("https://source.unsplash.com/400x400/?nike,sneaker")
+                        .imageUrl("https://images.unsplash.com/photo-1693400652052-884f8dd3dfd9?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
                         .saleStartTime(saleStart)
                         .saleEndTime(saleEnd)
                         .build());
@@ -46,7 +46,7 @@ public class DataSeeder {
                         .price(new BigDecimal("22999"))
                         .totalStock(300)
                         .flashSaleStock(30)
-                        .imageUrl("https://source.unsplash.com/400x400/?yeezy,sneaker")
+                        .imageUrl("https://images.unsplash.com/photo-1723740240701-a9fbf7719fe8?q=80&w=910&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
                         .saleStartTime(saleStart)
                         .saleEndTime(saleEnd)
                         .build());
@@ -57,7 +57,7 @@ public class DataSeeder {
                         .price(new BigDecimal("7995"))
                         .totalStock(800)
                         .flashSaleStock(80)
-                        .imageUrl("https://source.unsplash.com/400x400/?airforce,sneaker")
+                        .imageUrl("https://images.unsplash.com/photo-1656164753657-8ff832063a71?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
                         .saleStartTime(saleStart)
                         .saleEndTime(saleEnd)
                         .build());
@@ -68,7 +68,7 @@ public class DataSeeder {
                         .price(new BigDecimal("16999"))
                         .totalStock(400)
                         .flashSaleStock(40)
-                        .imageUrl("https://source.unsplash.com/400x400/?adidas,running")
+                        .imageUrl("https://images.unsplash.com/photo-1580902394724-b08ff9ba7e8a?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
                         .saleStartTime(saleStart)
                         .saleEndTime(saleEnd)
                         .build());
@@ -79,7 +79,7 @@ public class DataSeeder {
                         .price(new BigDecimal("8499"))
                         .totalStock(600)
                         .flashSaleStock(60)
-                        .imageUrl("https://source.unsplash.com/400x400/?puma,sneaker")
+                        .imageUrl("https://images.unsplash.com/photo-1715716234817-19e699050f60?q=80&w=1176&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
                         .saleStartTime(saleStart)
                         .saleEndTime(saleEnd)
                         .build());
@@ -90,7 +90,7 @@ public class DataSeeder {
                         .price(new BigDecimal("9999"))
                         .totalStock(350)
                         .flashSaleStock(35)
-                        .imageUrl("https://source.unsplash.com/400x400/?newbalance,sneaker")
+                        .imageUrl("https://images.unsplash.com/photo-1628429437853-40ec8ebe3386?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
                         .saleStartTime(saleStart)
                         .saleEndTime(saleEnd)
                         .build());
@@ -101,7 +101,7 @@ public class DataSeeder {
                         .price(new BigDecimal("4499"))
                         .totalStock(1000)
                         .flashSaleStock(100)
-                        .imageUrl("https://source.unsplash.com/400x400/?converse,sneaker")
+                        .imageUrl("https://images.unsplash.com/photo-1601131831144-5d096d7a832c?q=80&w=764&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
                         .saleStartTime(saleStart)
                         .saleEndTime(saleEnd)
                         .build());
@@ -112,7 +112,7 @@ public class DataSeeder {
                         .price(new BigDecimal("5499"))
                         .totalStock(700)
                         .flashSaleStock(70)
-                        .imageUrl("https://source.unsplash.com/400x400/?vans,skateboard")
+                        .imageUrl("https://images.unsplash.com/photo-1618686081236-3ef081793aa6?q=80&w=1143&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
                         .saleStartTime(saleStart)
                         .saleEndTime(saleEnd)
                         .build());
@@ -123,23 +123,12 @@ public class DataSeeder {
                         .price(new BigDecimal("8995"))
                         .totalStock(450)
                         .flashSaleStock(45)
-                        .imageUrl("https://source.unsplash.com/400x400/?nike,dunk")
+                        .imageUrl("https://images.unsplash.com/photo-1726200333701-df09434e48c4?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
                         .saleStartTime(saleStart)
                         .saleEndTime(saleEnd)
                         .build());
 
-                sneakerRepository.save(Sneaker.builder()
-                        .name("Classic Leather")
-                        .brand("Reebok")
-                        .price(new BigDecimal("6499"))
-                        .totalStock(550)
-                        .flashSaleStock(55)
-                        .imageUrl("https://source.unsplash.com/400x400/?reebok,classic")
-                        .saleStartTime(saleStart)
-                        .saleEndTime(saleEnd)
-                        .build());
-
-                System.out.println("10 sneakers seeded successfully!");
+                System.out.println("9 sneakers seeded successfully!");
             }
 
             LocalDateTime freshSaleStart = LocalDateTime.now().minusMinutes(1);
