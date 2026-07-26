@@ -104,10 +104,10 @@ flowchart TB
         Counter[(Live stock counters<br/>flash:stock:id)]
     end
 
-    subgraph Postgres[(PostgreSQL)]
-        Users[(users)]
-        Sneakers[(sneakers)]
-        Orders[(orders)]
+    subgraph PostgresLayer[PostgreSQL]
+        Users[users]
+        Sneakers[sneakers]
+        Orders[orders]
     end
 
     FE -->|HTTPS + JWT| AuthC
