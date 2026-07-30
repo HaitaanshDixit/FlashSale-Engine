@@ -2,59 +2,66 @@ package com.flashsale.flashsale_engine.service;
 
 import com.flashsale.flashsale_engine.dto.SneakerRequestDTO;
 import com.flashsale.flashsale_engine.dto.SneakerResponseDTO;
+import com.flashsale.flashsale_engine.dto.SneakerStaticDTO;
 import com.flashsale.flashsale_engine.exception.ResourceNotFoundException;
 import com.flashsale.flashsale_engine.model.Sneaker;
 import com.flashsale.flashsale_engine.repository.SneakerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Caching;
-
 @Service
 @RequiredArgsConstructor
-//Lombok's annotation. Since sneakerRepository is declared as final, Lombok automatically generates a constructor that injects it.
 public class SneakerService {
 
     private final SneakerRepository sneakerRepository;
+    private final RedisStockService redisStockService;
 
-    // creating
+    // PUBLIC ENTRY POINTS (uncached, always merge live stock)
+    public List<SneakerResponseDTO> getAllSneakers() {
+        return getAllStaticData().stream().map(this::mergeWithLiveStock).collect(Collectors.toList());
+    }
+
+    public SneakerResponseDTO getSneakerById(Long id) {
+        SneakerStaticDTO staticData = getStaticDataById(id);
+        return mergeWithLiveStock(staticData);
+    }
+
+    // CACHED STATIC DATA (name/brand/price/image/sale window)
+    @Cacheable(value = "sneakers", key = "'all'")
+    public List<SneakerStaticDTO> getAllStaticData() {
+        System.out.println("Fetching sneaker STATIC data from DB (cache miss)");
+        return sneakerRepository.findAll().stream().map(this::mapToStaticDTO).collect(Collectors.toList());
+    }
+
+    @Cacheable(value = "sneakers", key = "#id")
+    public SneakerStaticDTO getStaticDataById(Long id) {
+        System.out.println("Fetching sneaker " + id + " STATIC data from DB (cache miss)");
+        Sneaker sneaker = sneakerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + id));
+        return mapToStaticDTO(sneaker);
+    }
+
+    //WRITE OPERATIONS (evict the static cache)
     @CacheEvict(value = "sneakers", key = "'all'")
     public SneakerResponseDTO createSneaker(SneakerRequestDTO requestDTO) {
         Sneaker sneaker = mapToEntity(requestDTO);
         Sneaker saved = sneakerRepository.save(sneaker);
-        return mapToResponseDTO(saved);
+        redisStockService.initializeStock(saved.getId(), saved.getFlashSaleStock());
+        return mergeWithLiveStock(mapToStaticDTO(saved));
     }
 
-    // getting all the sneakers
-    @Cacheable(value = "sneakers", key = "'all'")
-    public List<SneakerResponseDTO> getAllSneakers() {
-        return sneakerRepository.findAll()
-                .stream()
-                .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
-    }
-
-    // get by id
-    @Cacheable(value = "sneakers", key = "#id")
-    public SneakerResponseDTO getSneakerById(Long id) {
-        Sneaker sneaker = sneakerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + id));
-        return mapToResponseDTO(sneaker);
-    }
-
-    // updating any sneaker args
     @Caching(evict = {
             @CacheEvict(value = "sneakers", key = "'all'"),
             @CacheEvict(value = "sneakers", key = "#id")
     })
     public SneakerResponseDTO updateSneaker(Long id, SneakerRequestDTO requestDTO) {
         Sneaker sneaker = sneakerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + id));
-
         sneaker.setName(requestDTO.getName());
         sneaker.setBrand(requestDTO.getBrand());
         sneaker.setPrice(requestDTO.getPrice());
@@ -65,10 +72,11 @@ public class SneakerService {
         sneaker.setSaleEndTime(requestDTO.getSaleEndTime());
 
         Sneaker updated = sneakerRepository.save(sneaker);
-        return mapToResponseDTO(updated);
+        // Admin explicitly changed stock so then resync the live Redis counter to match.
+        redisStockService.initializeStock(updated.getId(), updated.getFlashSaleStock());
+        return mergeWithLiveStock(mapToStaticDTO(updated));
     }
 
-    // deleting data of our product by id
     @Caching(evict = {
             @CacheEvict(value = "sneakers", key = "'all'"),
             @CacheEvict(value = "sneakers", key = "#id")
@@ -81,21 +89,46 @@ public class SneakerService {
     }
 
 
-    private SneakerResponseDTO mapToResponseDTO(Sneaker sneaker) {
+    private SneakerResponseDTO mergeWithLiveStock(SneakerStaticDTO staticData) {
+        Long liveStock = redisStockService.getStock(staticData.getId());
+
+        // Defensive fallback: if Redis has no counter for this id (e.g. Redis was
+        // flushed without an app restart), fall back to Postgres and re-seed Redis
+        // so this doesn't repeat on the next request.
+        if (liveStock == null) {
+            Sneaker sneaker = sneakerRepository.findById(staticData.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + staticData.getId()));
+            redisStockService.initializeStock(sneaker.getId(), sneaker.getFlashSaleStock());
+            liveStock = (long) sneaker.getFlashSaleStock();
+        }
+
+        int stock = liveStock.intValue();
+
         return SneakerResponseDTO.builder()
+                .id(staticData.getId())
+                .name(staticData.getName())
+                .brand(staticData.getBrand())
+                .price(staticData.getPrice())
+                .imageUrl(staticData.getImageUrl())
+                .flashSaleStock(stock)
+                .saleStartTime(staticData.getSaleStartTime())
+                .saleEndTime(staticData.getSaleEndTime())
+                .saleStatus(computeSaleStatus(staticData.getSaleStartTime(), staticData.getSaleEndTime(), stock))
+                .isSoldOut(stock <= 0)
+                .build();
+    }
+
+    private SneakerStaticDTO mapToStaticDTO(Sneaker sneaker) {
+        return SneakerStaticDTO.builder()
                 .id(sneaker.getId())
                 .name(sneaker.getName())
                 .brand(sneaker.getBrand())
                 .price(sneaker.getPrice())
                 .imageUrl(sneaker.getImageUrl())
-                .flashSaleStock(sneaker.getFlashSaleStock())
                 .saleStartTime(sneaker.getSaleStartTime())
                 .saleEndTime(sneaker.getSaleEndTime())
-                .saleStatus(computeSaleStatus(sneaker))
-                .isSoldOut(sneaker.getFlashSaleStock() == 0)
                 .build();
     }
-
 
     private Sneaker mapToEntity(SneakerRequestDTO dto) {
         return Sneaker.builder()
@@ -110,20 +143,19 @@ public class SneakerService {
                 .build();
     }
 
-    // HELPER : Compute sale status
-    private String computeSaleStatus(Sneaker sneaker) {
+    private String computeSaleStatus(LocalDateTime saleStart, LocalDateTime saleEnd, int stock) {
         LocalDateTime now = LocalDateTime.now();
 
-        if (sneaker.getSaleStartTime() == null || sneaker.getSaleEndTime() == null) {
+        if (saleStart == null || saleEnd == null) {
             return "NO_SALE";
         }
-        if (sneaker.getFlashSaleStock() == 0) {
+        if (stock <= 0) {
             return "SOLD_OUT";
         }
-        if (now.isBefore(sneaker.getSaleStartTime())) {
+        if (now.isBefore(saleStart)) {
             return "UPCOMING";
         }
-        if (now.isAfter(sneaker.getSaleEndTime())) {
+        if (now.isAfter(saleEnd)) {
             return "ENDED";
         }
         return "ACTIVE";
