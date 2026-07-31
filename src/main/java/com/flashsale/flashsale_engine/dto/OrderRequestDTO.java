@@ -9,10 +9,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class OrderRequestDTO {
-
     @NotNull(message = "Sneaker ID cannot be null")
     private Long sneakerId;
-
-    @NotNull(message = "User ID cannot be null")
-    private Long userId;
 }
