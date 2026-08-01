@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+
+
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -24,12 +27,16 @@ public class OrderService {
     private final SneakerRepository sneakerRepository;
     private final RedisStockService redisStockService;
 
+    private Long getAuthenticatedUserId() {
+        return (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+
     @Transactional
     public OrderResponseDTO placeOrder(OrderRequestDTO requestDTO) {
+        Long userId = getAuthenticatedUserId();
 
         // Step 1: Cheap, non-locking fetch just to check sale window and get flashSaleStock for Redis init
-        Sneaker sneakerCheck = sneakerRepository.findById(requestDTO.getSneakerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + requestDTO.getSneakerId()));
+        Sneaker sneakerCheck = sneakerRepository.findById(requestDTO.getSneakerId()).orElseThrow(() -> new ResourceNotFoundException("Sneaker not found with id: " + requestDTO.getSneakerId()));
 
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         if (sneakerCheck.getSaleStartTime() == null || sneakerCheck.getSaleEndTime() == null) {
@@ -43,7 +50,7 @@ public class OrderService {
         }
 
         // Step 2: Check if already ordered (no lock needed, just a read)
-        boolean alreadyOrdered = orderRepository.existsBySneakerIdAndUserId(requestDTO.getSneakerId(), requestDTO.getUserId());
+        boolean alreadyOrdered = orderRepository.existsBySneakerIdAndUserId(requestDTO.getSneakerId(), userId);
         if (alreadyOrdered) {
             throw new RuntimeException("You have already purchased this sneaker");
         }
@@ -76,7 +83,7 @@ public class OrderService {
         // Step 7: Create order
         Order order = Order.builder()
                 .sneaker(sneaker)
-                .userId(requestDTO.getUserId())
+                .userId(userId)
                 .quantity(1)
                 .priceAtPurchase(sneaker.getPrice())
                 .status(OrderStatus.PENDING)
@@ -86,19 +93,33 @@ public class OrderService {
         return mapToResponseDTO(saved);
     }
 
-    //GET ALL ORDERS BY USER
-    public List<OrderResponseDTO> getOrdersByUser(Long userId) {
+    //GET ALL ORDERS FOR THE AUTHENTICATED USER
+    // No longer takes a userId parameter -- the caller can only ever see their own
+    // orders. Taking userId from the path/caller was the vulnerability: any
+    // authenticated user could view any other user's order history just by changing
+    // the path variable.
+    public List<OrderResponseDTO> getOrdersByUser() {
+        Long userId = getAuthenticatedUserId();
         return orderRepository.findByUserId(userId)
                 .stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    //GET ORDER BY ID
+    //GET ORDER BY ID (with ownership check)
     public OrderResponseDTO getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Order not found with id: " + orderId));
+
+        Long requesterId = getAuthenticatedUserId();
+        if (!order.getUserId().equals(requesterId)) {
+            // Throw the same "not found" the caller would get for a nonexistent order,
+            // rather than a 403, so an attacker probing sequential IDs can't tell the
+            // difference between "doesn't exist" and "exists but isn't yours."
+            throw new ResourceNotFoundException("Order not found with id: " + orderId);
+        }
+
         return mapToResponseDTO(order);
     }
     private OrderResponseDTO mapToResponseDTO(Order order) {
