@@ -25,17 +25,18 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // get order by id
+    // get order by id (ownership check happens in the service layer)
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderResponseDTO> getOrderById(@PathVariable Long orderId) {
         OrderResponseDTO order = orderService.getOrderById(orderId);
         return ResponseEntity.ok(order);
     }
 
-    // get all orders by the user
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<OrderResponseDTO>> getOrdersByUser(@PathVariable Long userId) {
-        List<OrderResponseDTO> orders = orderService.getOrdersByUser(userId);
+    // get all orders for the AUTHENTICATED user
+    // The user is now derived entirely from the verified JWT inside the service.
+    @GetMapping("/user")
+    public ResponseEntity<List<OrderResponseDTO>> getOrdersByUser() {
+        List<OrderResponseDTO> orders = orderService.getOrdersByUser();
         return ResponseEntity.ok(orders);
     }
 }
