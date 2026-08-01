@@ -4,6 +4,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 /*
+
+Overall flow : Service class then error ResourceNotFoundException super(message) (stores message in memory) then  Spring intercepts it & calls GlobalExceptionHandler which Formats error into ErrorResponse
+Thorough flow :
+
 1. findById(999) runs
         ↓
 2. Returns Optional<Sneaker> — either contains a Sneaker or is empty
